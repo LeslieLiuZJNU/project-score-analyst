@@ -1,10 +1,23 @@
 import tkinter
+from tkinter import DISABLED
+from tkinter.constants import HORIZONTAL
+from tkinter.constants import X
+from tkinter.ttk import Separator
 
 # 语文、数学、英语、科学 的数组
+import xlrd
+
 chinese = []
 mathematics = []
 english = []
 science = []
+
+choice_sum: int
+choice_correct: int
+fill_sum: int
+fill_correct: int
+answer_sum: int
+answer_correct: int
 
 # 定义显示窗口的标签
 label_chinese_average: tkinter.Label
@@ -15,6 +28,11 @@ label_english_average: tkinter.Label
 label_english_median: tkinter.Label
 label_science_average: tkinter.Label
 label_science_median: tkinter.Label
+label_choice_score: tkinter.Label
+label_fill_score: tkinter.Label
+label_answer_score: tkinter.Label
+
+text_comment: tkinter.Text
 
 
 # 读入1门课的成绩
@@ -84,7 +102,6 @@ def find_largest_in_list(subject: list):
 
 # 计算1门课的中位数
 def compute_one_median(parameter: list):
-
     # 计算 一共有多少个数
     subject = parameter[:]
     len_subject = len(subject)
@@ -131,7 +148,6 @@ def compute_all_median():
 
 # 显示1门课的折线图
 def show_subject_details(name: str, subject: list):
-
     # 根据数组里取出来的成绩，画折线图
     window_subject_details = tkinter.Tk()
     window_subject_details.title(name + '详情')
@@ -176,8 +192,38 @@ def show_science_details():
     show_subject_details('科学', science)
 
 
-if __name__ == '__main__':
+def read_question_scores():
+    question_scores_workbook = xlrd.open_workbook('Question Type Score.xls')
+    question_scores_worksheet = question_scores_workbook.sheet_by_name('Sheet1')
+    global choice_sum
+    global choice_correct
+    global fill_sum
+    global fill_correct
+    global answer_sum
+    global answer_correct
+    choice_sum = int(question_scores_worksheet.cell(1, 0).value)
+    choice_correct = int(question_scores_worksheet.cell(1, 1).value)
+    fill_sum = int(question_scores_worksheet.cell(1, 2).value)
+    fill_correct = int(question_scores_worksheet.cell(1, 3).value)
+    answer_sum = int(question_scores_worksheet.cell(1, 4).value)
+    answer_correct = int(question_scores_worksheet.cell(1, 5).value)
+    label_choice_score['text'] = '选择判断题\n' + str(choice_correct) + '/' + str(choice_sum)
+    label_fill_score['text'] = '填空题\n' + str(fill_correct) + '/' + str(fill_sum)
+    label_answer_score['text'] = '简答题\n' + str(answer_correct) + '/' + str(answer_sum)
 
+
+def show_comment():
+    state = 1
+    if choice_correct / choice_sum > 0.67: state += 4
+    if fill_correct / fill_sum > 0.67: state += 2
+    if answer_correct / answer_sum > 0.67: state += 1
+    comments_workbook = xlrd.open_workbook('Comments.xls')
+    comments_worksheet = comments_workbook.sheet_by_name('Sheet1')
+
+    text_comment.insert('0.0', comments_worksheet.cell(state, 4).value)
+
+
+if __name__ == '__main__':
     # 主函数，显示出窗口界面
 
     window = tkinter.Tk()
@@ -200,7 +246,7 @@ if __name__ == '__main__':
     label_science_median = tkinter.Label(window, text='科学成绩中位数\n')
     label_science_median.grid(row=4, column=2)
 
-    button_read_scores = tkinter.Button(window, text='读入成绩', command=read_all_scores)
+    button_read_scores = tkinter.Button(window, text='读入全科成绩', command=read_all_scores)
     button_read_scores.grid(row=0, column=0)
     button_compute_average_scores = tkinter.Button(window, text='计算成绩平均数', command=compute_all_average)
     button_compute_average_scores.grid(row=0, column=1)
@@ -216,4 +262,22 @@ if __name__ == '__main__':
     button_show_science_details = tkinter.Button(window, text='显示科学详情', command=show_science_details)
     button_show_science_details.grid(row=4, column=0)
 
+    sep = Separator(window, orient=HORIZONTAL)
+    sep.grid(row=5, columnspan=5, sticky=(tkinter.W, tkinter.E))
+
+    label_choice_score = tkinter.Label(window, text='选择判断题\n')
+    label_choice_score.grid(row=6, column=1)
+    label_fill_score = tkinter.Label(window, text='填空题\n')
+    label_fill_score.grid(row=6, column=2)
+    label_answer_score = tkinter.Label(window, text='简答题\n')
+    label_answer_score.grid(row=6, column=3)
+
+    button_read_scores = tkinter.Button(window, text='读入题型答对情况', command=read_question_scores)
+    button_read_scores.grid(row=6, column=0)
+    button_read_scores = tkinter.Button(window, text='智能诊断', command=show_comment)
+    button_read_scores.grid(row=7, column=0)
+
+    text_comment = tkinter.Text(window, height=5, width=30)
+    #text_comment.config(state=DISABLED)
+    text_comment.grid(row=7, column=1, columnspan=3)
     window.mainloop()
